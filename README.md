@@ -156,7 +156,28 @@ Creates all tables: `users`, `roles`, `user_roles`, `documents`, `document_acces
 
 ---
 
-### 5. Start Ollama and pull models
+### 5. Seed the database
+
+Bootstrap one user per role type so you can log in immediately:
+
+```bash
+uv run python scripts/seed_db.py
+```
+
+This creates four accounts (all with password `Admin1234!`):
+
+| Email | Role type | Description |
+|---|---|---|
+| `admin@example.com` | `SYSTEM_ADMIN` | Full admin access |
+| `global.auditor@example.com` | `GLOBAL_AUDITOR` | Sees all documents, feedback weight 2.0 |
+| `domain.auditor@example.com` | `DOMAIN_AUDITOR` | Engineering domain, feedback weight 1.5 |
+| `user@example.com` | `FUNCTIONAL` | Standard user, Engineering domain |
+
+The script is idempotent — safe to re-run if accounts already exist.
+
+---
+
+### 6. Start Ollama and pull models
 
 ```bash
 # In a separate terminal
@@ -169,7 +190,7 @@ ollama pull nomic-embed-text
 
 ---
 
-### 6. Start the API
+### 7. Start the API
 
 ```bash
 # Single worker is required — ChromaDB embedded mode is not safe with multiple workers
@@ -181,7 +202,7 @@ Interactive docs at `http://localhost:8000/docs`
 
 ---
 
-### 7. Run tests
+### 8. Run tests
 
 ```bash
 uv run pytest tests/ -v
