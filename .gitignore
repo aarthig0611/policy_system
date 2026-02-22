@@ -1,0 +1,55 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# Data (local only — never commit)
+data/
+*.db
+*.sqlite
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ruff
+.ruff_cache/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Node / Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
+# Alembic (keep versions tracked, ignore __pycache__)
+policy_system/db/migrations/__pycache__/
+
+*.local.md
