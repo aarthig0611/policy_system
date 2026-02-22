@@ -3,7 +3,7 @@
 /**
  * CreateUserForm — form for creating new user accounts.
  *
- * Fields: email (required), password (required, min 8 chars), full_name (optional, display only)
+ * Fields: email (required), password (required, min 8 chars)
  * Submits to POST /api/backend/admin/users
  * Invalidates ["admin", "users"] query on success.
  */

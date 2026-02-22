@@ -1,21 +1,18 @@
 /**
  * openapi-fetch client pointing to the Next.js proxy (/api/backend → FastAPI :8000).
  *
- * Types will be filled in during TASK-14 once `npm run gen-types` is run.
- * Until then we use `any` as a placeholder so the rest of the app can import
- * this module without TypeScript errors.
+ * Typed against the generated `src/types/api.d.ts` (produced by `npm run gen-types`).
+ * The `paths` export from that file describes every endpoint, request body, and
+ * response shape — openapi-fetch uses it to infer argument and return types at
+ * compile time.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import createClient from "openapi-fetch";
+import type { paths } from "@/types/api";
 
-// Minimal stub — replaced by the generated `api.d.ts` in TASK-14
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ApiPaths = Record<string, any>;
-
-const client = createClient<ApiPaths>({
+const client = createClient<paths>({
   baseUrl: "/api/backend",
 });
 
 export { client };
-export type { ApiPaths };
+export type { paths as ApiPaths };

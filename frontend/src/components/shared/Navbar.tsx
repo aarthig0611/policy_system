@@ -65,6 +65,7 @@ export default function Navbar() {
                 <NavLink href="/admin/documents">Documents</NavLink>
               </>
             )}
+            <NavLink href="/profile">Profile</NavLink>
           </nav>
         )}
       </div>
