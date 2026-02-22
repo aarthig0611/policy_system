@@ -24,19 +24,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enums
-    response_format_enum = postgresql.ENUM(
-        "EXECUTIVE_SUMMARY", "DETAILED_RESPONSE", name="response_format_enum"
-    )
-    role_type_enum = postgresql.ENUM(
-        "SYSTEM_ADMIN", "GLOBAL_AUDITOR", "DOMAIN_AUDITOR", "FUNCTIONAL", name="role_type_enum"
-    )
-    message_role_enum = postgresql.ENUM("user", "assistant", name="message_role_enum")
-
-    response_format_enum.create(op.get_bind(), checkfirst=True)
-    role_type_enum.create(op.get_bind(), checkfirst=True)
-    message_role_enum.create(op.get_bind(), checkfirst=True)
-
     # users
     op.create_table(
         "users",

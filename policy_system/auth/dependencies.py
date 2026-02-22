@@ -9,10 +9,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from policy_system.auth.jwt_handler import decode_token
 from policy_system.core.exceptions import AuthenticationError
-from policy_system.db.models import User
+from policy_system.db.models import User, UserRole
 from policy_system.db.session import get_db_session
 
 _bearer = HTTPBearer(auto_error=True)
@@ -40,7 +41,11 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    result = await session.execute(select(User).where(User.user_id == user_id))
+    result = await session.execute(
+        select(User)
+        .options(selectinload(User.roles).selectinload(UserRole.role))
+        .where(User.user_id == user_id)
+    )
     user = result.scalar_one_or_none()
 
     if user is None or not user.is_active:
@@ -55,8 +60,7 @@ async def get_current_user(
 
 async def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """Dependency that requires the current user to have a SYSTEM_ADMIN role."""
-    from sqlalchemy.orm import selectinload
-    from policy_system.db.models import UserRole, Role, RoleType
+    from policy_system.db.models import RoleType
 
     # Check if any of user's roles is SYSTEM_ADMIN
     has_admin = any(

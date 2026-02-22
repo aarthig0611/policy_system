@@ -52,4 +52,6 @@ frontend/.env.local
 # Alembic (keep versions tracked, ignore __pycache__)
 policy_system/db/migrations/__pycache__/
 
+# Local notes
+.local/
 *.local.md

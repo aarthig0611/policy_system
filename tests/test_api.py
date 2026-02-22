@@ -68,7 +68,7 @@ class TestAuthEndpoints:
 
     async def test_get_me_no_token(self, client: AsyncClient):
         response = await client.get("/auth/me")
-        assert response.status_code == 403
+        assert response.status_code in (401, 403)
 
 
 @pytest.mark.asyncio

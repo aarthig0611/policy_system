@@ -16,9 +16,10 @@ dependencies = [
     "alembic>=1.14.0",
     "asyncpg>=0.30.0",
     # Auth
-    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.0",
     "python-jose[cryptography]>=3.3.0",
     # Config
+    "pydantic[email]>=2.0.0",
     "pydantic-settings>=2.7.0",
     # Document parsing
     "pypdf>=5.0.0",
@@ -37,6 +38,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "aiosqlite>=0.20.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.0.0",

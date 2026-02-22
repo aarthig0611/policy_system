@@ -58,8 +58,9 @@ async def assign_role(session: AsyncSession, user_id: uuid.UUID, role_id: uuid.U
             UserRole.user_id == user_id, UserRole.role_id == role_id
         )
     )
-    if existing.scalar_one_or_none() is not None:
-        return existing.scalar_one()
+    existing_row = existing.scalar_one_or_none()
+    if existing_row is not None:
+        return existing_row
 
     user_role = UserRole(user_id=user_id, role_id=role_id)
     session.add(user_role)

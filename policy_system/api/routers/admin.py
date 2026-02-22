@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.orm import selectinload
+
 from policy_system.admin import access_service, document_service, user_service
 from policy_system.api.schemas import (
     DocumentAccessUpdate,
@@ -83,7 +85,12 @@ async def create_user(
         )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    return _user_to_response(user)
+    result = await session.execute(
+        select(User)
+        .options(selectinload(User.roles).selectinload(UserRole.role))
+        .where(User.user_id == user.user_id)
+    )
+    return _user_to_response(result.scalar_one())
 
 
 @router.get("/users", response_model=list[UserResponse])
