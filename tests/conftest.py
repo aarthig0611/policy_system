@@ -11,11 +11,11 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from policy_system.api.main import create_app
-from policy_system.auth.password import hash_password
-from policy_system.db.base import Base
-from policy_system.db.models import ResponseFormat, Role, RoleType, User, UserRole
-from policy_system.db.session import get_db_session
+from backend.api.main import create_app
+from backend.auth.password import hash_password
+from backend.db.base import Base
+from backend.db.models import ResponseFormat, Role, RoleType, User, UserRole
+from backend.db.session import get_db_session
 
 # In-memory SQLite for tests (dialect-agnostic testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"

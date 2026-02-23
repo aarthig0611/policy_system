@@ -6,10 +6,10 @@ import asyncio
 
 from sqlalchemy import select
 
-from policy_system.admin.user_service import assign_role, create_user, get_user_by_email
-from policy_system.core.exceptions import ValidationError
-from policy_system.db.models import Role, RoleType
-from policy_system.db.session import get_session
+from backend.admin.user_service import assign_role, create_user, get_user_by_email
+from backend.core.exceptions import ValidationError
+from backend.db.models import Role, RoleType
+from backend.db.session import get_session
 
 SEED_ROLES = [
     {"role_name": "System Administrators", "role_type": RoleType.SYSTEM_ADMIN,  "domain": None},

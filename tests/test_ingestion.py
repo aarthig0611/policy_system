@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from policy_system.ingestion.chunker import DocumentChunker
-from policy_system.ingestion.parsers.base import ParsedDocument, ParsedPage
-from policy_system.ingestion.parsers.text_parser import TextParser
-from policy_system.ingestion.pipeline import chunk_document
+from backend.ingestion.chunker import DocumentChunker
+from backend.ingestion.parsers.base import ParsedDocument, ParsedPage
+from backend.ingestion.parsers.text_parser import TextParser
+from backend.ingestion.pipeline import chunk_document
 
 
 class TestTextParser:
@@ -42,7 +42,7 @@ class TestTextParser:
         assert not parser.supports("file.xyz")
 
     def test_missing_file_raises(self):
-        from policy_system.core.exceptions import IngestError
+        from backend.core.exceptions import IngestError
         parser = TextParser()
         with pytest.raises(IngestError):
             parser.parse("/nonexistent/path/file.txt")

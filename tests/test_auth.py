@@ -8,10 +8,10 @@ from datetime import datetime, timezone
 import pytest
 from jose import jwt
 
-from policy_system.auth.jwt_handler import create_token, decode_token
-from policy_system.auth.password import hash_password, verify_password
-from policy_system.config import settings
-from policy_system.core.exceptions import AuthenticationError
+from backend.auth.jwt_handler import create_token, decode_token
+from backend.auth.password import hash_password, verify_password
+from backend.config import settings
+from backend.core.exceptions import AuthenticationError
 
 
 class TestPasswordHashing:

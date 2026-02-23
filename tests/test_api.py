@@ -8,9 +8,9 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from policy_system.auth.jwt_handler import create_token
-from policy_system.db.models import ResponseFormat, Role, RoleType, User, UserRole
-from policy_system.auth.password import hash_password
+from backend.auth.jwt_handler import create_token
+from backend.db.models import ResponseFormat, Role, RoleType, User, UserRole
+from backend.auth.password import hash_password
 
 
 def auth_headers(user: User) -> dict:

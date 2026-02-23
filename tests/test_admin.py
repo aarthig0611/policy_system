@@ -8,9 +8,9 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from policy_system.admin import access_service, document_service, user_service
-from policy_system.core.exceptions import ValidationError
-from policy_system.db.models import ResponseFormat, Role, RoleType, User, UserRole
+from backend.admin import access_service, document_service, user_service
+from backend.core.exceptions import ValidationError
+from backend.db.models import ResponseFormat, Role, RoleType, User, UserRole
 
 
 @pytest.mark.asyncio
