@@ -20,16 +20,30 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow static files and Next.js internals
-  if (
-    pathname.startsWith("/_next/") ||
-    pathname === "/favicon.ico" ||
-    isPublic(pathname)
-  ) {
+  if (pathname.startsWith("/_next/") || pathname === "/favicon.ico") {
     return NextResponse.next();
   }
 
   const token = request.cookies.get("token");
 
+  // Inject Authorization header for backend proxy requests so FastAPI's
+  // HTTPBearer dependency can read it (the token lives in an httpOnly cookie,
+  // not the Authorization header, so we bridge them here).
+  if (pathname.startsWith("/api/backend/")) {
+    if (!token) {
+      return NextResponse.next(); // FastAPI will return 401
+    }
+    const headers = new Headers(request.headers);
+    headers.set("Authorization", `Bearer ${token.value}`);
+    return NextResponse.next({ request: { headers } });
+  }
+
+  // Public page routes pass through without a token check
+  if (isPublic(pathname)) {
+    return NextResponse.next();
+  }
+
+  // All other routes require the token cookie
   if (!token) {
     const loginUrl = new URL("/login", request.url);
     // Preserve the originally requested path so we can redirect after login
