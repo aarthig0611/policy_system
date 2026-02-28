@@ -7,9 +7,8 @@
  * Fetches the current user via GET /api/backend/auth/me (same endpoint as
  * useAuth, re-used through the shared query key ["auth", "me"]).
  *
- * Updates default_format via PATCH /api/backend/admin/users/{user_id}.
- * Note: this endpoint requires SYSTEM_ADMIN role on the backend. Non-admin
- * users will see a permissions error if they attempt to save.
+ * Updates default_format via PATCH /api/backend/auth/me.
+ * Available to any authenticated user — no admin role required.
  */
 
 import { useState, useEffect } from "react";
@@ -31,23 +30,15 @@ async function fetchCurrentUser(): Promise<AuthUser> {
   return res.json();
 }
 
-interface UpdateUserPayload {
-  user_id: string;
-  default_format: ResponseFormat;
-}
-
 async function updateDefaultFormat(
-  payload: UpdateUserPayload
+  default_format: ResponseFormat
 ): Promise<AuthUser> {
-  const res = await fetch(
-    `/api/backend/admin/users/${payload.user_id}`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ default_format: payload.default_format }),
-    }
-  );
+  const res = await fetch("/api/backend/auth/me", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ default_format }),
+  });
   if (!res.ok) {
     const body = await res
       .json()
@@ -96,7 +87,7 @@ export default function ProfilePage() {
 
   const [savedBanner, setSavedBanner] = useState(false);
 
-  const mutation = useMutation({
+  const mutation = useMutation<AuthUser, Error, ResponseFormat>({
     mutationFn: updateDefaultFormat,
     onSuccess: (updatedUser) => {
       // Update both the profile query and the auth cache
@@ -114,7 +105,7 @@ export default function ProfilePage() {
       setTimeout(() => setSavedBanner(false), 3000);
       return;
     }
-    mutation.mutate({ user_id: user.user_id, default_format: selectedFormat });
+    mutation.mutate(selectedFormat);
   }
 
   if (isLoading) {
