@@ -59,6 +59,10 @@ class UserUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class UserSelfUpdate(BaseModel):
+    default_format: ResponseFormat
+
+
 # ---------------------------------------------------------------------------
 # Roles
 # ---------------------------------------------------------------------------

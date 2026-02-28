@@ -6,12 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.admin.user_service import get_user_by_email
-from backend.api.schemas import LoginRequest, TokenResponse, UserResponse
+from backend.api.schemas import LoginRequest, TokenResponse, UserResponse, UserSelfUpdate
 from backend.auth.dependencies import get_current_user
 from backend.auth.jwt_handler import create_token
 from backend.auth.password import verify_password
 from backend.db.models import User, UserRole
 from backend.db.session import get_db_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -39,6 +40,30 @@ async def login(
         user_id=user.user_id,
         email=user.email,
         default_format=user.default_format,
+    )
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    payload: UserSelfUpdate,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> UserResponse:
+    """Update the current user's default response format."""
+    current_user.default_format = payload.default_format
+    await session.flush()
+    roles = []
+    for ur in current_user.roles:
+        if ur.role:
+            from backend.api.schemas import RoleResponse
+            roles.append(RoleResponse.model_validate(ur.role))
+    return UserResponse(
+        user_id=current_user.user_id,
+        email=current_user.email,
+        default_format=current_user.default_format,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        roles=roles,
     )
 
 
