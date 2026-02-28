@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "policy-system"
 version = "0.1.0"
 description = "Role-based AI policy management system with RAG"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     # Web framework
     "fastapi>=0.115.0",
@@ -28,7 +28,7 @@ dependencies = [
     "langchain-text-splitters>=0.3.0",
     # LLM / RAG
     "ollama>=0.4.0",
-    "chromadb>=0.6.0",
+    "chromadb>=1.0.0",
     # Validation scoring
     "sentence-transformers>=3.0.0",
     # Utilities
@@ -61,4 +61,11 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["policy_system"]
+packages = ["policy_system", "backend"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "kagglehub>=1.0.0",
+    "nbconvert>=7.17.0",
+]
