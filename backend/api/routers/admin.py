@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.orm import selectinload
 
 from backend.admin import access_service, document_service, user_service
+from backend.api.providers import get_providers
+from backend.ingestion.pipeline import ingest_document
 from backend.api.schemas import (
     DocumentAccessUpdate,
     DocumentArchiveToggle,
@@ -184,6 +187,69 @@ async def list_roles(
 # ---------------------------------------------------------------------------
 # Document endpoints
 # ---------------------------------------------------------------------------
+
+
+_UPLOADS_DIR = Path("data/uploads")
+_ACCEPTED_SUFFIXES = {".pdf", ".docx", ".txt", ".md"}
+
+
+@router.post("/documents/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_document(
+    file: UploadFile = File(...),
+    title: str = Form(..., min_length=1, max_length=500),
+    role_ids: list[uuid.UUID] = Form(...),
+    session: AsyncSession = Depends(get_db_session),
+    current_admin: User = Depends(require_admin),
+) -> DocumentResponse:
+    """
+    Upload a document file, register it in the DB, and ingest it into ChromaDB.
+
+    Accepts multipart/form-data with:
+    - file: the document binary (.pdf / .docx / .txt / .md)
+    - title: display title
+    - role_ids: repeated form field — one value per role UUID
+    """
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in _ACCEPTED_SUFFIXES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unsupported file type '{suffix}'. Accepted: {', '.join(sorted(_ACCEPTED_SUFFIXES))}",
+        )
+
+    _UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    safe_name = f"{uuid.uuid4().hex}{suffix}"
+    dest = _UPLOADS_DIR / safe_name
+    contents = await file.read()
+    dest.write_bytes(contents)
+
+    try:
+        doc = await document_service.register_document(
+            session,
+            title=title.strip(),
+            storage_uri=str(dest),
+            uploaded_by=current_admin.user_id,
+        )
+        try:
+            await access_service.set_document_access(session, doc.doc_id, role_ids)
+        except (DocumentNotFoundError, RoleNotFoundError) as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+        rag_provider, llm_provider = get_providers()
+        allowed_role_strs = [str(r) for r in role_ids]
+        ingest_document(
+            file_path=dest,
+            doc_id=str(doc.doc_id),
+            allowed_roles=allowed_role_strs,
+            rag_provider=rag_provider,
+            llm_provider=llm_provider,
+            title=title.strip(),
+        )
+    except Exception:
+        dest.unlink(missing_ok=True)
+        raise
+
+    full_doc = await document_service.get_document(session, doc.doc_id)
+    return _doc_to_response(full_doc)
 
 
 @router.post("/documents", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)

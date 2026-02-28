@@ -5,30 +5,16 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.api.providers import get_providers
 from backend.api.schemas import CrossDomainPrompt, QueryRequest, QueryResponse
 from backend.auth.dependencies import get_current_user
 from backend.core.models import CrossDomainPermissionRequired
 from backend.db.models import User
 from backend.db.session import get_db_session
-from backend.llm.factory import get_llm_provider
 from backend.query.citation_builder import build_citations
 from backend.query.engine import run_query
-from backend.rag.factory import get_rag_provider
 
 router = APIRouter(prefix="/query", tags=["query"])
-
-# Module-level providers (initialized once — important for ChromaDB single-process constraint)
-_rag_provider = None
-_llm_provider = None
-
-
-def _get_providers():
-    global _rag_provider, _llm_provider
-    if _rag_provider is None:
-        _rag_provider = get_rag_provider()
-    if _llm_provider is None:
-        _llm_provider = get_llm_provider()
-    return _rag_provider, _llm_provider
 
 
 @router.post("/", response_model=QueryResponse | CrossDomainPrompt)
@@ -43,7 +29,7 @@ async def query_policy(
     If no documents match the user's roles, returns a CrossDomainPrompt
     instead of calling the LLM.
     """
-    rag_provider, llm_provider = _get_providers()
+    rag_provider, llm_provider = get_providers()
 
     result = await run_query(
         session=session,

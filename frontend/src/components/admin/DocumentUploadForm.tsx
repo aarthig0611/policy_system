@@ -7,10 +7,8 @@
  * Role tagging: multi-select (mandatory — at least one role required)
  * Title: required text field
  *
- * Submission note: The backend's POST /admin/documents endpoint accepts a JSON
- * body with { title, storage_uri, role_ids }. This form uses the selected
- * file's name as the storage_uri. A future ingestion endpoint upgrade may
- * accept multipart/form-data with a file binary.
+ * Submits multipart/form-data to POST /admin/documents/upload.
+ * The backend saves the file, registers it in Postgres, and ingests it into ChromaDB.
  *
  * Invalidates ["admin", "documents"] on success.
  */
@@ -18,7 +16,7 @@
 import { useState, useRef, FormEvent, ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import type { DocumentCreatePayload, DocumentResponse, RoleResponse } from "@/types/admin";
+import type { DocumentResponse, RoleResponse } from "@/types/admin";
 
 async function fetchRoles(): Promise<RoleResponse[]> {
   const res = await fetch("/api/backend/admin/roles", {
@@ -28,18 +26,16 @@ async function fetchRoles(): Promise<RoleResponse[]> {
   return res.json();
 }
 
-async function uploadDocument(
-  payload: DocumentCreatePayload
-): Promise<DocumentResponse> {
-  const res = await fetch("/api/backend/admin/documents", {
+async function uploadDocument(formData: FormData): Promise<DocumentResponse> {
+  const res = await fetch("/api/backend/admin/documents/upload", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify(payload),
+    body: formData,
+    // No Content-Type header — browser sets it with the correct multipart boundary
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail ?? "Failed to register document");
+    throw new Error(body.detail ?? "Failed to upload document");
   }
   return res.json();
 }
@@ -80,7 +76,7 @@ export default function DocumentUploadForm() {
     queryFn: fetchRoles,
   });
 
-  const mutation = useMutation({
+  const mutation = useMutation<DocumentResponse, Error, FormData>({
     mutationFn: uploadDocument,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "documents"] });
@@ -129,13 +125,13 @@ export default function DocumentUploadForm() {
     }
     setFieldErrors({});
 
-    // Use the file name as storage_uri — the backend ingestion pipeline
-    // will resolve this to the actual stored path.
-    mutation.mutate({
-      title: title.trim(),
-      storage_uri: file!.name,
-      role_ids: selectedRoleIds,
-    });
+    const formData = new FormData();
+    formData.append("file", file!);
+    formData.append("title", title.trim());
+    for (const roleId of selectedRoleIds) {
+      formData.append("role_ids", roleId);
+    }
+    mutation.mutate(formData);
   }
 
   const inputBase = cn(
@@ -292,7 +288,7 @@ export default function DocumentUploadForm() {
             "disabled:cursor-not-allowed disabled:opacity-50"
           )}
         >
-          {mutation.isPending ? "Registering…" : "Register document"}
+          {mutation.isPending ? "Uploading…" : "Upload document"}
         </button>
       </form>
     </div>
