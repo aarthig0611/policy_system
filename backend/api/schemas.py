@@ -153,6 +153,17 @@ class ConversationResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ChatMessageResponse(BaseModel):
+    msg_id: uuid.UUID
+    conv_id: uuid.UUID
+    role: str
+    content: str
+    format_used: ResponseFormat
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class CrossDomainPrompt(BaseModel):
     """Returned when no chunks match after role filtering."""
     type: str = "cross_domain_permission_required"

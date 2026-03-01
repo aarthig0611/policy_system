@@ -5,16 +5,68 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import uuid
+
 from backend.api.providers import get_providers
-from backend.api.schemas import CrossDomainPrompt, QueryRequest, QueryResponse
+from backend.api.schemas import (
+    ChatMessageResponse,
+    ConversationResponse,
+    CrossDomainPrompt,
+    QueryRequest,
+    QueryResponse,
+)
 from backend.auth.dependencies import get_current_user
 from backend.core.models import CrossDomainPermissionRequired
-from backend.db.models import User
+from backend.db.models import Conversation, User
 from backend.db.session import get_db_session
 from backend.query.citation_builder import build_citations
+from backend.query.conversation_service import get_conversation_messages, get_user_conversations
 from backend.query.engine import run_query
 
 router = APIRouter(prefix="/query", tags=["query"])
+
+
+@router.get("/conversations", response_model=list[ConversationResponse])
+async def list_conversations(
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> list[ConversationResponse]:
+    """List the current user's conversations, most recent first."""
+    convs = await get_user_conversations(session, current_user.user_id)
+    return [
+        ConversationResponse(
+            conv_id=c.conv_id,
+            user_id=c.user_id,
+            is_flagged=c.is_flagged,
+            started_at=c.started_at,
+            message_count=len(c.messages),
+        )
+        for c in convs
+    ]
+
+
+@router.get("/conversations/{conv_id}/messages", response_model=list[ChatMessageResponse])
+async def list_conversation_messages(
+    conv_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> list[ChatMessageResponse]:
+    """Return all messages in a conversation. Only accessible by the conversation owner."""
+    conv = await session.get(Conversation, conv_id)
+    if conv is None or conv.user_id != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    messages = await get_conversation_messages(session, conv_id)
+    return [
+        ChatMessageResponse(
+            msg_id=m.msg_id,
+            conv_id=m.conv_id,
+            role=m.role.value,
+            content=m.content,
+            format_used=m.format_used,
+            created_at=m.created_at,
+        )
+        for m in messages
+    ]
 
 
 @router.post("/", response_model=QueryResponse | CrossDomainPrompt)
