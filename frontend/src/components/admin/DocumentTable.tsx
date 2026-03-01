@@ -9,6 +9,7 @@
  * Uses optimistic update on archive toggle.
  */
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { DocumentResponse } from "@/types/admin";
@@ -23,6 +24,17 @@ async function fetchDocuments(): Promise<DocumentResponse[]> {
     throw new Error(body.detail ?? "Failed to fetch documents");
   }
   return res.json();
+}
+
+async function deleteDocument(docId: string): Promise<void> {
+  const res = await fetch(`/api/backend/admin/documents/${docId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail ?? "Failed to delete document");
+  }
 }
 
 async function toggleArchive(
@@ -83,6 +95,7 @@ function RoleBadge({ name }: { name: string }) {
 
 export default function DocumentTable() {
   const queryClient = useQueryClient();
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const {
     data: documents,
@@ -93,6 +106,17 @@ export default function DocumentTable() {
   } = useQuery<DocumentResponse[]>({
     queryKey: ["admin", "documents"],
     queryFn: fetchDocuments,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (docId: string) => deleteDocument(docId),
+    onSuccess: () => {
+      setConfirmId(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "documents"] });
+    },
+    onError: () => {
+      setConfirmId(null);
+    },
   });
 
   const archiveMutation = useMutation({
@@ -251,25 +275,54 @@ export default function DocumentTable() {
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm">
-                  <button
-                    onClick={() =>
-                      archiveMutation.mutate({
-                        docId: doc.doc_id,
-                        currentIsArchived: doc.is_archived,
-                      })
-                    }
-                    disabled={archiveMutation.isPending}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                      "border focus:outline-none focus:ring-2",
-                      "disabled:cursor-not-allowed disabled:opacity-50",
-                      doc.is_archived
-                        ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 focus:ring-green-200"
-                        : "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 focus:ring-yellow-200"
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        archiveMutation.mutate({
+                          docId: doc.doc_id,
+                          currentIsArchived: doc.is_archived,
+                        })
+                      }
+                      disabled={archiveMutation.isPending || deleteMutation.isPending}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                        "border focus:outline-none focus:ring-2",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
+                        doc.is_archived
+                          ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 focus:ring-green-200"
+                          : "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 focus:ring-yellow-200"
+                      )}
+                    >
+                      {doc.is_archived ? "Unarchive" : "Archive"}
+                    </button>
+
+                    {confirmId === doc.doc_id ? (
+                      <>
+                        <button
+                          onClick={() => deleteMutation.mutate(doc.doc_id)}
+                          disabled={deleteMutation.isPending}
+                          className="rounded-md border border-red-300 bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deleteMutation.isPending ? "Deleting…" : "Confirm delete"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmId(null)}
+                          disabled={deleteMutation.isPending}
+                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmId(doc.doc_id)}
+                        disabled={archiveMutation.isPending || deleteMutation.isPending}
+                        className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
                     )}
-                  >
-                    {doc.is_archived ? "Unarchive" : "Archive"}
-                  </button>
+                  </div>
                 </td>
               </tr>
             ))

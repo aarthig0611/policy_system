@@ -63,6 +63,23 @@ async def get_document(session: AsyncSession, doc_id: uuid.UUID) -> Document | N
     return result.scalar_one_or_none()
 
 
+async def delete_document(session: AsyncSession, doc_id: uuid.UUID) -> Document:
+    """
+    Delete a document record from the database.
+
+    Does NOT handle ChromaDB chunk deletion or file cleanup — the caller
+    (router) is responsible for those before invoking this function.
+    DocumentAccess rows are removed automatically via cascade.
+
+    Raises DocumentNotFoundError if not found.
+    """
+    doc = await session.get(Document, doc_id)
+    if doc is None:
+        raise DocumentNotFoundError(f"Document {doc_id} not found")
+    await session.delete(doc)
+    return doc
+
+
 async def list_documents(
     session: AsyncSession, include_archived: bool = False
 ) -> list[Document]:

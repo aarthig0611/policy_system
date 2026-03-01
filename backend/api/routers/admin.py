@@ -317,6 +317,35 @@ async def toggle_archive(
     return _doc_to_response(doc)
 
 
+@router.delete("/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    doc_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_admin),
+) -> None:
+    """
+    Permanently delete a document: purges ChromaDB chunks, removes the file
+    from disk, then deletes the DB record (cascades to document_access).
+    Admin only.
+    """
+    doc = await document_service.get_document(session, doc_id)
+    if doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    # 1. Purge chunks from ChromaDB
+    rag_provider, _ = get_providers()
+    rag_provider.delete_by_doc_id(str(doc_id))
+
+    # 2. Remove the uploaded file from disk
+    Path(doc.storage_uri).unlink(missing_ok=True)
+
+    # 3. Delete the DB record (cascades to document_access)
+    try:
+        await document_service.delete_document(session, doc_id)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
 @router.put("/documents/{doc_id}/access", response_model=MessageResponse)
 async def set_document_access(
     doc_id: uuid.UUID,
