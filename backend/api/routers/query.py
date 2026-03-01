@@ -23,7 +23,7 @@ from backend.query.citation_builder import build_citations
 from backend.query.conversation_service import get_conversation_messages, get_user_conversations
 from backend.query.engine import run_query
 
-router = APIRouter(prefix="/query", tags=["query"])
+router = APIRouter(prefix="/query", tags=["query"], redirect_slashes=False)
 
 
 @router.get("/conversations", response_model=list[ConversationResponse])
@@ -69,7 +69,7 @@ async def list_conversation_messages(
     ]
 
 
-@router.post("/", response_model=QueryResponse | CrossDomainPrompt)
+@router.post("", response_model=QueryResponse | CrossDomainPrompt)
 async def query_policy(
     payload: QueryRequest,
     session: AsyncSession = Depends(get_db_session),
