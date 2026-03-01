@@ -26,7 +26,6 @@ import MessageThread from "@/components/chat/MessageThread";
 import FormatToggle, { ResponseFormat } from "@/components/chat/FormatToggle";
 import DomainSelector from "@/components/chat/DomainSelector";
 import ArchiveToggle from "@/components/chat/ArchiveToggle";
-import CrossDomainPrompt from "@/components/chat/CrossDomainPrompt";
 import { cn } from "@/lib/utils";
 
 /** Extract unique non-null domains from the user's roles. */
@@ -120,10 +119,8 @@ export default function ChatPage() {
     conversationId,
     isLoading,
     error,
-    crossDomainOpen,
-    crossDomainMessage,
     sendQuery,
-    closeCrossDomainPrompt,
+    retryWithDomain,
     resetConversation,
     loadConversation,
   } = useChat();
@@ -159,6 +156,14 @@ export default function ChatPage() {
     setActiveConvId(null);
     setSidebarOpen(false);
   }, [resetConversation]);
+
+  const handleDomainSwitch = useCallback(
+    (domain: string) => {
+      setDomainFilter(domain);
+      retryWithDomain(domain);
+    },
+    [retryWithDomain]
+  );
 
   const handleSend = useCallback(() => {
     const text = inputText.trim();
@@ -206,12 +211,6 @@ export default function ChatPage() {
 
   return (
     <>
-      <CrossDomainPrompt
-        open={crossDomainOpen}
-        message={crossDomainMessage}
-        onClose={closeCrossDomainPrompt}
-      />
-
       {/* Full-height flex row overriding default layout padding */}
       <div className="-m-6 flex h-[calc(100vh-3.5rem)]">
         {/* ── Sidebar ─────────────────────────────────────── */}
@@ -296,6 +295,7 @@ export default function ChatPage() {
             messages={messages}
             showCitations={showCitations}
             isLoading={isLoading || loadingConvId !== null}
+            onDomainSwitch={handleDomainSwitch}
           />
 
           {/* Error banner */}

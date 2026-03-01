@@ -24,6 +24,7 @@ export interface ChatMessage {
   content: string;
   message_id?: string;
   citations?: Citation[];
+  availableDomains?: string[]; // set on the inline cross-domain prompt message
 }
 
 export interface SendQueryOptions {
@@ -80,17 +81,23 @@ function generateLocalId(): string {
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [crossDomainOpen, setCrossDomainOpen] = useState(false);
-  const [crossDomainMessage, setCrossDomainMessage] = useState("");
+  const [lastQueryText, setLastQueryText] = useState<string | null>(null);
+  const [lastQueryOptions, setLastQueryOptions] = useState<SendQueryOptions | null>(null);
 
   const mutation = useMutation({
     mutationFn: postQuery,
     onSuccess: (data, variables) => {
       if ("type" in data && data.type === "cross_domain_permission_required") {
-        setCrossDomainMessage(data.message);
-        setCrossDomainOpen(true);
-        // Remove the pending user message — the query didn't succeed
-        setMessages((prev) => prev.slice(0, -1));
+        // Replace the pending user message with an inline domain-switch card
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          {
+            id: generateLocalId(),
+            role: "assistant",
+            content: data.message,
+            availableDomains: data.available_domains,
+          },
+        ]);
         return;
       }
 
@@ -119,6 +126,9 @@ export function useChat() {
 
   const sendQuery = useCallback(
     (text: string, options: SendQueryOptions) => {
+      setLastQueryText(text);
+      setLastQueryOptions(options);
+
       const userMessage: ChatMessage = {
         id: generateLocalId(),
         role: "user",
@@ -141,9 +151,38 @@ export function useChat() {
     [mutation, conversationId]
   );
 
-  const closeCrossDomainPrompt = useCallback(() => {
-    setCrossDomainOpen(false);
-  }, []);
+  /** Re-send the last query with a new domain filter (after a cross-domain prompt). */
+  const retryWithDomain = useCallback(
+    (domain: string) => {
+      if (!lastQueryText || !lastQueryOptions) return;
+
+      const newOptions = { ...lastQueryOptions, domain_filter: domain };
+      setLastQueryOptions(newOptions);
+
+      // Remove the cross-domain inline message and re-add the user message
+      const userMessage: ChatMessage = {
+        id: generateLocalId(),
+        role: "user",
+        content: lastQueryText,
+      };
+      setMessages((prev) => [
+        ...prev.filter((m) => !m.availableDomains),
+        userMessage,
+      ]);
+
+      mutation.mutate({
+        message: lastQueryText,
+        format_override:
+          newOptions.format === "detailed"
+            ? "DETAILED_RESPONSE"
+            : "EXECUTIVE_SUMMARY",
+        include_archived: newOptions.include_archived,
+        domain_filter: domain,
+        conv_id: conversationId,
+      });
+    },
+    [lastQueryText, lastQueryOptions, mutation, conversationId]
+  );
 
   const resetConversation = useCallback(() => {
     setMessages([]);
@@ -164,10 +203,8 @@ export function useChat() {
     conversationId,
     isLoading: mutation.isPending,
     error: mutation.error,
-    crossDomainOpen,
-    crossDomainMessage,
     sendQuery,
-    closeCrossDomainPrompt,
+    retryWithDomain,
     resetConversation,
     loadConversation,
   };

@@ -14,12 +14,14 @@ interface MessageThreadProps {
   messages: ChatMessage[];
   showCitations: boolean;
   isLoading: boolean;
+  onDomainSwitch?: (domain: string) => void;
 }
 
 export default function MessageThread({
   messages,
   showCitations,
   isLoading,
+  onDomainSwitch,
 }: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -53,16 +55,49 @@ export default function MessageThread({
   return (
     <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
       <div className="mx-auto w-full max-w-3xl space-y-4">
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            role={msg.role}
-            content={msg.content}
-            message_id={msg.message_id}
-            citations={msg.citations}
-            showCitations={showCitations}
-          />
-        ))}
+        {messages.map((msg) =>
+          msg.availableDomains ? (
+            <div key={msg.id} className="flex justify-start">
+              <div className="max-w-lg rounded-2xl rounded-bl-sm border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+                <div className="mb-2 flex items-center gap-2">
+                  {/* Lock icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber-600" aria-hidden="true">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <p className="text-sm font-medium text-amber-900">Access Restricted</p>
+                </div>
+                <p className="mb-3 text-sm text-amber-800">{msg.content}</p>
+                {msg.availableDomains.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    <p className="w-full text-xs font-medium text-amber-700">
+                      Switch to a domain you have access to:
+                    </p>
+                    {msg.availableDomains.map((domain) => (
+                      <button
+                        key={domain}
+                        type="button"
+                        onClick={() => onDomainSwitch?.(domain)}
+                        className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-100"
+                      >
+                        {domain}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <MessageBubble
+              key={msg.id}
+              role={msg.role}
+              content={msg.content}
+              message_id={msg.message_id}
+              citations={msg.citations}
+              showCitations={showCitations}
+            />
+          )
+        )}
 
         {isLoading && (
           <div className="flex justify-start">
