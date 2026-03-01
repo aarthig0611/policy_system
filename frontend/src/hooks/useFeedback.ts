@@ -64,5 +64,6 @@ export function useFeedback() {
     isSuccess: mutation.isSuccess,
     isError: mutation.isError,
     error: mutation.error,
+    reset: mutation.reset,
   };
 }
