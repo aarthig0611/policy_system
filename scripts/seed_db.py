@@ -16,6 +16,13 @@ SEED_ROLES = [
     {"role_name": "Global Auditors",        "role_type": RoleType.GLOBAL_AUDITOR, "domain": None},
     {"role_name": "Engineering Auditors",   "role_type": RoleType.DOMAIN_AUDITOR, "domain": "Engineering"},
     {"role_name": "Engineering Users",      "role_type": RoleType.FUNCTIONAL,     "domain": "Engineering"},
+    # Kaggle dataset domains (roles created by ingest_policies.py — upserted here for idempotency)
+    {"role_name": "IT Security Users",      "role_type": RoleType.FUNCTIONAL,     "domain": "IT Security"},
+    {"role_name": "IT Security Auditors",   "role_type": RoleType.DOMAIN_AUDITOR, "domain": "IT Security"},
+    {"role_name": "Compliance Users",       "role_type": RoleType.FUNCTIONAL,     "domain": "Compliance"},
+    {"role_name": "Compliance Auditors",    "role_type": RoleType.DOMAIN_AUDITOR, "domain": "Compliance"},
+    {"role_name": "Healthcare Users",       "role_type": RoleType.FUNCTIONAL,     "domain": "Healthcare"},
+    {"role_name": "Healthcare Auditors",    "role_type": RoleType.DOMAIN_AUDITOR, "domain": "Healthcare"},
 ]
 
 SEED_USERS = [
@@ -23,6 +30,10 @@ SEED_USERS = [
     {"email": "global.auditor@example.com", "password": "Admin1234!", "role_name": "Global Auditors"},
     {"email": "domain.auditor@example.com", "password": "Admin1234!", "role_name": "Engineering Auditors"},
     {"email": "user@example.com",           "password": "Admin1234!", "role_name": "Engineering Users"},
+    # Kaggle dataset domain users
+    {"email": "it.security@example.com",    "password": "Admin1234!", "role_name": "IT Security Users"},
+    {"email": "compliance@example.com",     "password": "Admin1234!", "role_name": "Compliance Users"},
+    {"email": "healthcare@example.com",     "password": "Admin1234!", "role_name": "Healthcare Users"},
 ]
 
 

@@ -217,6 +217,10 @@ Tests use an in-memory SQLite database and do not require Postgres or Ollama to 
 The `notebooks/` directory contains one Jupyter notebook per build phase. Open them in order to validate each layer interactively.
 
 ```bash
+# Register the kernel once after uv sync (writes the correct Python path outside .venv)
+uv run python -m ipykernel install --user --name policy-system --display-name "Policy System"
+
+# Launch JupyterLab and select the "Policy System" kernel in each notebook
 uv run jupyter lab
 ```
 
