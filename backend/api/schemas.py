@@ -212,6 +212,24 @@ class CannedQuestionCreate(BaseModel):
     domain: str | None = None
 
 
+class CannedQuestionResponse(BaseModel):
+    question_id: uuid.UUID
+    question_text: str
+    gold_answer: str
+    domain: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ValidationSummary(BaseModel):
+    total: int
+    passed: int
+    failed: int
+    pass_rate: float
+    avg_score: float
+
+
 class ValidationRunResponse(BaseModel):
     run_id: uuid.UUID
     question_id: uuid.UUID
@@ -227,6 +245,14 @@ class ValidationRunResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Generic
 # ---------------------------------------------------------------------------
+
+
+class FlaggedConversationResponse(BaseModel):
+    conv_id: uuid.UUID
+    user_email: str
+    first_message: str | None
+    started_at: datetime
+    message_count: int
 
 
 class MessageResponse(BaseModel):

@@ -19,6 +19,7 @@ from backend.api.schemas import (
     DocumentArchiveToggle,
     DocumentCreate,
     DocumentResponse,
+    FlaggedConversationResponse,
     MessageResponse,
     RoleAssign,
     RoleResponse,
@@ -33,7 +34,7 @@ from backend.core.exceptions import (
     UserNotFoundError,
     ValidationError,
 )
-from backend.db.models import DocumentAccess, Role, User, UserRole
+from backend.db.models import Conversation, DocumentAccess, Message, Role, User, UserRole
 from backend.db.session import get_db_session
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -329,3 +330,63 @@ async def set_document_access(
     except (DocumentNotFoundError, RoleNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return MessageResponse(message="Document access updated")
+
+
+# ---------------------------------------------------------------------------
+# Flagged conversation endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/flagged-conversations", response_model=list[FlaggedConversationResponse])
+async def list_flagged_conversations(
+    session: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_admin),
+) -> list[FlaggedConversationResponse]:
+    """List all flagged conversations with user email and first message preview. Admin only."""
+    from sqlalchemy.orm import selectinload
+
+    result = await session.execute(
+        select(Conversation)
+        .where(Conversation.is_flagged == True)  # noqa: E712
+        .options(
+            selectinload(Conversation.user),
+            selectinload(Conversation.messages),
+        )
+        .order_by(Conversation.started_at.desc())
+    )
+    convs = result.scalars().all()
+
+    items = []
+    for conv in convs:
+        first_msg = next(
+            (m.content for m in conv.messages if m.role.value == "user"),
+            None,
+        )
+        items.append(
+            FlaggedConversationResponse(
+                conv_id=conv.conv_id,
+                user_email=conv.user.email if conv.user else "unknown",
+                first_message=first_msg[:200] if first_msg else None,
+                started_at=conv.started_at,
+                message_count=len(conv.messages),
+            )
+        )
+    return items
+
+
+@router.patch(
+    "/flagged-conversations/{conv_id}",
+    response_model=MessageResponse,
+)
+async def resolve_flagged_conversation(
+    conv_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_admin),
+) -> MessageResponse:
+    """Clear the is_flagged flag on a conversation (mark as resolved). Admin only."""
+    conv = await session.get(Conversation, conv_id)
+    if conv is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    conv.is_flagged = False
+    await session.flush()
+    return MessageResponse(message="Conversation resolved")

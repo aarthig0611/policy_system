@@ -63,6 +63,7 @@ export default function Navbar() {
               <>
                 <NavLink href="/admin/users">Users</NavLink>
                 <NavLink href="/admin/documents">Documents</NavLink>
+                <NavLink href="/admin/flagged">Flagged</NavLink>
               </>
             )}
             <NavLink href="/profile">Profile</NavLink>

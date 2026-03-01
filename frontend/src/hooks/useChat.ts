@@ -150,6 +150,15 @@ export function useChat() {
     setConversationId(null);
   }, []);
 
+  /** Load a historical conversation into the current chat state. */
+  const loadConversation = useCallback(
+    (convId: string, historicalMessages: ChatMessage[]) => {
+      setMessages(historicalMessages);
+      setConversationId(convId);
+    },
+    []
+  );
+
   return {
     messages,
     conversationId,
@@ -160,5 +169,6 @@ export function useChat() {
     sendQuery,
     closeCrossDomainPrompt,
     resetConversation,
+    loadConversation,
   };
 }
