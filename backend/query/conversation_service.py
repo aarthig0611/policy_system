@@ -98,6 +98,7 @@ async def get_user_conversations(
     result = await session.execute(
         select(Conversation)
         .where(Conversation.user_id == user_id)
+        .options(selectinload(Conversation.messages))
         .order_by(Conversation.started_at.desc())
     )
     return list(result.scalars().all())
