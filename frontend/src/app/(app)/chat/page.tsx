@@ -84,8 +84,8 @@ function ConvItem({
           </span>
         )}
       </div>
-      <p className="mt-0.5 text-xs text-gray-400">
-        {conv.message_count} message{conv.message_count !== 1 ? "s" : ""}
+      <p className="mt-0.5 truncate text-xs text-gray-400">
+        {conv.first_user_message ?? `${conv.message_count} message${conv.message_count !== 1 ? "s" : ""}`}
       </p>
     </button>
   );

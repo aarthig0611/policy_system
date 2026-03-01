@@ -16,6 +16,7 @@ export interface ConversationSummary {
   is_flagged: boolean;
   started_at: string; // ISO string
   message_count: number;
+  first_user_message: string | null;
 }
 
 export interface HistoricalMessage {

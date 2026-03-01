@@ -17,7 +17,7 @@ from backend.api.schemas import (
 )
 from backend.auth.dependencies import get_current_user
 from backend.core.models import CrossDomainPermissionRequired
-from backend.db.models import Conversation, User
+from backend.db.models import Conversation, MessageRole, User
 from backend.db.session import get_db_session
 from backend.query.citation_builder import build_citations
 from backend.query.conversation_service import get_conversation_messages, get_user_conversations
@@ -33,16 +33,25 @@ async def list_conversations(
 ) -> list[ConversationResponse]:
     """List the current user's conversations, most recent first."""
     convs = await get_user_conversations(session, current_user.user_id)
-    return [
-        ConversationResponse(
-            conv_id=c.conv_id,
-            user_id=c.user_id,
-            is_flagged=c.is_flagged,
-            started_at=c.started_at,
-            message_count=len(c.messages),
+    result = []
+    for c in convs:
+        # messages are already eager-loaded; find the first user message for the preview
+        first_user = next(
+            (m for m in sorted(c.messages, key=lambda m: m.created_at)
+             if m.role == MessageRole.user),
+            None,
         )
-        for c in convs
-    ]
+        result.append(
+            ConversationResponse(
+                conv_id=c.conv_id,
+                user_id=c.user_id,
+                is_flagged=c.is_flagged,
+                started_at=c.started_at,
+                message_count=len(c.messages),
+                first_user_message=first_user.content if first_user else None,
+            )
+        )
+    return result
 
 
 @router.get("/conversations/{conv_id}/messages", response_model=list[ChatMessageResponse])

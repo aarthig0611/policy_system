@@ -149,6 +149,7 @@ class ConversationResponse(BaseModel):
     is_flagged: bool
     started_at: datetime
     message_count: int = 0
+    first_user_message: str | None = None
 
     model_config = {"from_attributes": True}
 
