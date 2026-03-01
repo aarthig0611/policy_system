@@ -29,12 +29,16 @@ class RAGProvider(Protocol):
         allowed_role_ids: list[str],
         top_k: int = 5,
         include_archived: bool = False,
+        score_threshold: float = 0.0,
     ) -> list[RetrievedChunk]:
         """
         Return top_k chunks matching the query.
 
         SECURITY: allowed_roles and is_archived filtering MUST happen at the
         vector store level (pre-filter), not in Python after retrieval.
+
+        score_threshold: post-retrieval quality gate — chunks with cosine
+        similarity below this value are discarded. Default 0.0 = no filtering.
         """
         ...
 

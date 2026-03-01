@@ -26,7 +26,7 @@ class StubRAGProvider:
     def __init__(self, chunks: list[RetrievedChunk] | None = None) -> None:
         self._chunks = chunks or []
 
-    def similarity_search(self, query_embedding, allowed_role_ids, top_k=5, include_archived=False):
+    def similarity_search(self, query_embedding, allowed_role_ids, top_k=5, include_archived=False, score_threshold=0.0):
         return self._chunks
 
     def add_chunks(self, chunks): pass

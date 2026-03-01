@@ -115,6 +115,7 @@ class ChromaDBProvider:
         allowed_role_ids: list[str],
         top_k: int = 5,
         include_archived: bool = False,
+        score_threshold: float = 0.0,
     ) -> list[RetrievedChunk]:
         """
         SECURITY-CRITICAL: role filtering happens here at the DB level.
@@ -168,6 +169,10 @@ class ChromaDBProvider:
             # ChromaDB cosine distance: 0 = identical, 2 = opposite
             # Convert to similarity score: 1 - (distance / 2)
             score = 1.0 - (distance / 2.0)
+
+            # Drop chunks that fall below the quality threshold
+            if score_threshold > 0.0 and score < score_threshold:
+                continue
 
             page_num = meta.get("page_number", -1)
             para_num = meta.get("para_number", -1)

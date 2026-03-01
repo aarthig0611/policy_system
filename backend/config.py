@@ -47,11 +47,16 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
 
     # Chunking defaults
-    chunk_size: int = 800
-    chunk_overlap: int = 100
+    # 500 chars ≈ 1 focused policy rule per chunk → tighter, more precise embeddings.
+    # Re-ingest documents via Admin → Documents after changing these values.
+    chunk_size: int = 500
+    chunk_overlap: int = 150
 
     # RAG retrieval
-    rag_top_k: int = 5
+    # top_k=8 gives more candidates; score_threshold drops chunks too dissimilar
+    # to be useful before they reach the LLM (cosine similarity, 0–1 scale).
+    rag_top_k: int = 8
+    rag_score_threshold: float = 0.20
 
 
 # Singleton — import this everywhere

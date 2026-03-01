@@ -14,9 +14,11 @@ Rules:
 1. Base your answer ONLY on the provided context. Do not use outside knowledge.
 2. Keep your response brief and high-level (3-5 sentences maximum).
 3. Do NOT include citation markers like [1] or [Doc, Page X] in your response.
-4. If the context does not contain enough information to answer the question,
-   say: "The available policy documents do not address this topic."
-5. Use plain, professional language suitable for a senior audience.
+4. Use every piece of relevant information present in the context, even if it only
+   partially answers the question. Partial answers are more useful than no answer.
+5. Only say "The available policy documents do not address this topic." if the context
+   contains absolutely no information related to the question.
+6. Use plain, professional language suitable for a senior audience.
 """
 
 DETAILED_RESPONSE_PROMPT = """\
@@ -29,9 +31,11 @@ Rules:
 3. Include citation markers in square brackets after each claim: [Doc Title, Page X, Para Y]
    Use the document title, page number, and paragraph number from the context provided.
 4. Organize your response with clear structure (use bullet points or numbered lists where helpful).
-5. If the context does not contain enough information to answer the question,
-   say: "The available policy documents do not address this topic."
-6. End with a brief summary paragraph.
+5. Use every piece of relevant information present in the context, even if it only
+   partially answers the question. State clearly when the context covers only part of a topic.
+6. Only say "The available policy documents do not address this topic." if the context
+   contains absolutely no information related to the question.
+7. End with a brief summary paragraph.
 """
 
 

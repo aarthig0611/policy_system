@@ -91,6 +91,7 @@ async def run_query(
         allowed_role_ids=allowed_role_ids,
         top_k=top_k or settings.rag_top_k,
         include_archived=include_archived,
+        score_threshold=settings.rag_score_threshold,
     )
 
     # 5. If zero chunks: return CrossDomainPermissionRequired — DO NOT call LLM
