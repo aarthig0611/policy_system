@@ -194,7 +194,7 @@ ollama pull nomic-embed-text
 
 ```bash
 # Single worker is required — ChromaDB embedded mode is not safe with multiple workers
-uv run uvicorn policy_system.api.main:app --workers 1 --reload
+uv run uvicorn backend.api.main:app --workers 1 --reload
 ```
 
 API is live at `http://localhost:8000`
