@@ -34,7 +34,7 @@ from backend.core.exceptions import (
     UserNotFoundError,
     ValidationError,
 )
-from backend.db.models import Conversation, DocumentAccess, Message, Role, User, UserRole
+from backend.db.models import Conversation, DocumentAccess, Message, MessageRole, Role, User, UserRole
 from backend.db.session import get_db_session
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -388,7 +388,7 @@ async def list_flagged_conversations(
     items = []
     for conv in convs:
         first_msg = next(
-            (m.content for m in conv.messages if m.role.value == "user"),
+            (m.content for m in conv.messages if m.role == MessageRole.user),
             None,
         )
         items.append(

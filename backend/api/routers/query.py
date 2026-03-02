@@ -17,7 +17,7 @@ from backend.api.schemas import (
 )
 from backend.auth.dependencies import get_current_user
 from backend.core.models import CrossDomainPermissionRequired
-from backend.db.models import Conversation, MessageRole, User
+from backend.db.models import Conversation, MessageRole, ResponseFormat, User
 from backend.db.session import get_db_session
 from backend.query.citation_builder import build_citations
 from backend.query.conversation_service import get_conversation_messages, get_user_conversations
@@ -117,6 +117,6 @@ async def query_policy(
         conv_id=result.conv_id,
         content=result.content,
         format_used=result.format_used,
-        citations=citations if result.format_used.value == "DETAILED_RESPONSE" else [],
+        citations=citations if result.format_used == ResponseFormat.DETAILED_RESPONSE else [],
         retrieved_doc_ids=result.retrieved_doc_ids,
     )

@@ -12,7 +12,6 @@ from backend.auth.jwt_handler import create_token
 from backend.auth.password import verify_password
 from backend.db.models import User, UserRole
 from backend.db.session import get_db_session
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
