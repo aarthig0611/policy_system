@@ -311,3 +311,49 @@ class ValidationRun(Base):
 
     # Relationships
     question: Mapped[CannedQuestion] = relationship("CannedQuestion", back_populates="validation_runs")
+
+
+# ---------------------------------------------------------------------------
+# 5. Performance Monitoring
+# ---------------------------------------------------------------------------
+
+
+class QueryMetrics(Base):
+    """
+    Per-query performance measurements.
+
+    msg_id is nullable: it is None when the query returned CrossDomainPermissionRequired
+    (no assistant message is persisted in that path).
+    user_id uses SET NULL so metrics survive user deletion for aggregate analysis.
+    """
+
+    __tablename__ = "query_metrics"
+
+    metric_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    msg_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("messages.msg_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    embed_latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
+    retrieve_latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
+    llm_latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
+    chunks_retrieved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    error_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    model_name: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

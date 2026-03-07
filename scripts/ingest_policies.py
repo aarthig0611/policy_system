@@ -32,6 +32,19 @@ ROLES = [
 ]
 
 # ---------------------------------------------------------------------------
+# Text file → role mapping (data/uploads/*.txt)
+# Keys are file stems (exact, case-sensitive). Values are role_name strings
+# that must already exist in the database.
+# ---------------------------------------------------------------------------
+
+TEXT_FILE_ROLES: dict[str, list[str]] = {
+    "finance_compliance": ["finance", "finance_auditor"],
+    "it_security_policy": ["it_eng",  "it_auditor"],
+}
+
+SKIP_FILES = {"sample.txt"}
+
+# ---------------------------------------------------------------------------
 # Policy → role mapping
 # Keys are substrings of PDF filenames (case-insensitive match).
 # Values are lists of role_name strings from ROLES above.
@@ -114,12 +127,10 @@ def resolve_roles(filename: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 async def main(dry_run: bool, force: bool) -> None:
-    print("── Step 1: Download dataset ──────────────────────────────────────")
-    import kagglehub  # noqa: PLC0415 — optional import
-
-    dataset_path = Path(kagglehub.dataset_download("virajsenevirathne/policies"))
-    pdfs = sorted(dataset_path.glob("*.pdf"))
-    print(f"  Found {len(pdfs)} PDFs at {dataset_path}")
+    print("── Step 1: Locate PDFs ───────────────────────────────────────────")
+    uploads_dir = Path(__file__).parent.parent / "data" / "uploads"
+    pdfs = sorted(uploads_dir.glob("*.pdf"))
+    print(f"  Found {len(pdfs)} PDFs at {uploads_dir}")
 
     print("\n── Step 2: Upsert roles ──────────────────────────────────────────")
     role_map: dict[str, Role] = {}
@@ -177,7 +188,59 @@ async def main(dry_run: bool, force: bool) -> None:
 
             doc_records.append((pdf, str(doc.doc_id), role_ids))
 
-    print(f"\n  Registered {len(doc_records)} documents with role access")
+    print(f"\n  Registered {len(doc_records)} PDF documents with role access")
+
+    print("\n── Step 3b: Register text files from data/uploads/ ─────────────")
+    uploads_dir = Path(__file__).parent.parent / "data" / "uploads"
+    txt_files = sorted(f for f in uploads_dir.glob("*.txt") if f.name not in SKIP_FILES)
+    print(f"  Found {len(txt_files)} text file(s) (skipping: {SKIP_FILES})")
+
+    async with get_session() as session:
+        from backend.db.models import User  # noqa: PLC0415
+
+        admin_result = await session.execute(
+            select(User).where(User.email == "admin@example.com")
+        )
+        admin = admin_result.scalar_one_or_none()
+        if admin is None:
+            print("  ERROR: admin@example.com not found — run seed_db.py first")
+            sys.exit(1)
+
+        for txt in txt_files:
+            stem = txt.stem
+            role_names = TEXT_FILE_ROLES.get(stem)
+            if role_names is None:
+                print(f"  [warn] No mapping for '{txt.name}' — skipping")
+                continue
+
+            # Look up roles from DB by exact role_name
+            role_ids = []
+            for rname in role_names:
+                result = await session.execute(select(Role).where(Role.role_name == rname))
+                role = result.scalar_one_or_none()
+                if role is None:
+                    print(f"  [warn] Role '{rname}' not found in DB — skipping")
+                else:
+                    role_ids.append(role.role_id)
+
+            existing = (await session.execute(
+                select(Document).where(Document.title == stem)
+            )).scalar_one_or_none()
+
+            if existing is not None:
+                doc = existing
+                print(f"  Exists:     {stem}")
+            else:
+                doc = await document_service.register_document(
+                    session,
+                    title=stem,
+                    storage_uri=str(txt),
+                    uploaded_by=admin.user_id,
+                )
+                print(f"  Registered: {stem}")
+
+            await access_service.set_document_access(session, doc.doc_id, role_ids)
+            doc_records.append((txt, str(doc.doc_id), role_ids))
 
     if dry_run:
         print("\n── Dry-run mode: skipping ChromaDB ingestion ─────────────────────")
@@ -212,6 +275,7 @@ async def main(dry_run: bool, force: bool) -> None:
             print(f"  [{i:02d}/{len(doc_records)}] ERROR {pdf.name}: {exc}")
 
     print(f"\n  Done. {total_chunks} total chunks stored in ChromaDB.")
+    print("  Restart the API (uvicorn) to reload the ChromaDB index into memory.")
     print("  The system is ready — start the API and query away.")
 
 

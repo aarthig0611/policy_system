@@ -244,6 +244,40 @@ class ValidationRunResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+
+class LatencyStats(BaseModel):
+    mean_ms: float
+    p50_ms: float
+    p95_ms: float
+    p99_ms: float
+    min_ms: float
+    max_ms: float
+
+
+class MetricsSummary(BaseModel):
+    total_queries: int
+    successful_queries: int
+    cross_domain_queries: int
+    error_queries: int
+    success_rate: float
+    cross_domain_rate: float
+    embed_latency: LatencyStats
+    retrieve_latency: LatencyStats
+    total_latency: LatencyStats
+    llm_latency: LatencyStats | None
+    avg_chunks_retrieved: float
+    avg_prompt_tokens: float
+    avg_completion_tokens: float
+    avg_total_tokens: float
+    window_start: datetime | None
+    window_end: datetime | None
+    computed_at: datetime
+
+
+# ---------------------------------------------------------------------------
 # Generic
 # ---------------------------------------------------------------------------
 

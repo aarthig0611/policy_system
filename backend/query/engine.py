@@ -73,63 +73,99 @@ async def run_query(
     chunks match after role filtering (LLM is NOT called in the latter case).
     """
     from backend.config import settings
+    from backend.monitoring.metrics import QueryMetricsCollector, persist_metrics, timed
 
-    # 1. Determine response format
-    response_format = format_override or user.default_format
+    collector = QueryMetricsCollector(user_id=user.user_id)
 
-    # 2. Resolve allowed role IDs (applies domain_filter if specified)
-    allowed_role_ids = await get_allowed_role_ids(
-        session, user.user_id, domain_filter=domain_filter
-    )
+    try:
+        # 1. Determine response format
+        response_format = format_override or user.default_format
 
-    # 3. Embed the query
-    query_embedding = llm_provider.embed(message)
-
-    # 4. Retrieve relevant chunks (SECURITY: pre-filter applied inside RAG provider)
-    chunks = rag_provider.similarity_search(
-        query_embedding=query_embedding,
-        allowed_role_ids=allowed_role_ids,
-        top_k=top_k or settings.rag_top_k,
-        include_archived=include_archived,
-        score_threshold=settings.rag_score_threshold,
-    )
-
-    # 5. If zero chunks: return CrossDomainPermissionRequired — DO NOT call LLM
-    if not chunks:
-        available_domains = await get_user_domains(session, user.user_id)
-        return CrossDomainPermissionRequired(
-            requested_domain=domain_filter,
-            available_domains=available_domains,
+        # 2. Resolve allowed role IDs (applies domain_filter if specified)
+        allowed_role_ids = await get_allowed_role_ids(
+            session, user.user_id, domain_filter=domain_filter
         )
 
-    # 6. Get conversation (or start a new one)
-    conversation = await get_or_create_conversation(session, user.user_id, conv_id)
+        # 3. Embed the query
+        with timed(collector._embed):
+            query_embedding = llm_provider.embed(message)
 
-    # 7. Save user message
-    await save_user_message(session, conversation.conv_id, message, response_format)
+        # 4. Retrieve relevant chunks (SECURITY: pre-filter applied inside RAG provider)
+        with timed(collector._retrieve):
+            chunks = rag_provider.similarity_search(
+                query_embedding=query_embedding,
+                allowed_role_ids=allowed_role_ids,
+                top_k=top_k or settings.rag_top_k,
+                include_archived=include_archived,
+                score_threshold=settings.rag_score_threshold,
+            )
 
-    # 8. Generate response
-    system_prompt = get_system_prompt(response_format)
-    llm_response = llm_provider.chat(
-        system_prompt=system_prompt,
-        user_message=message,
-        context_chunks=chunks,
-    )
+        collector.chunks_retrieved = len(chunks)
 
-    # 9. Save assistant message with source doc IDs
-    assistant_msg = await save_assistant_message(
-        session,
-        conversation.conv_id,
-        llm_response.content,
-        response_format,
-        retrieved_doc_ids=llm_response.retrieved_doc_ids,
-    )
+        # 5. If zero chunks: return CrossDomainPermissionRequired — DO NOT call LLM
+        if not chunks:
+            collector.success = True
+            collector.error_type = "cross_domain"
+            collector.model_name = settings.ollama_chat_model
+            available_domains = await get_user_domains(session, user.user_id)
+            return CrossDomainPermissionRequired(
+                requested_domain=domain_filter,
+                available_domains=available_domains,
+            )
 
-    return QueryResult(
-        msg_id=assistant_msg.msg_id,
-        conv_id=conversation.conv_id,
-        content=llm_response.content,
-        format_used=response_format,
-        retrieved_chunks=chunks,
-        model_name=llm_response.model_name,
-    )
+        # 6. Get conversation (or start a new one)
+        conversation = await get_or_create_conversation(session, user.user_id, conv_id)
+
+        # 7. Save user message
+        await save_user_message(session, conversation.conv_id, message, response_format)
+
+        # 8. Generate response
+        system_prompt = get_system_prompt(response_format)
+        with timed(collector._llm):
+            llm_response = llm_provider.chat(
+                system_prompt=system_prompt,
+                user_message=message,
+                context_chunks=chunks,
+            )
+
+        # 9. Save assistant message with source doc IDs
+        assistant_msg = await save_assistant_message(
+            session,
+            conversation.conv_id,
+            llm_response.content,
+            response_format,
+            retrieved_doc_ids=llm_response.retrieved_doc_ids,
+        )
+
+        collector.msg_id = assistant_msg.msg_id
+        collector.prompt_tokens = llm_response.prompt_tokens
+        collector.completion_tokens = llm_response.completion_tokens
+        collector.model_name = llm_response.model_name
+        collector.success = True
+
+        return QueryResult(
+            msg_id=assistant_msg.msg_id,
+            conv_id=conversation.conv_id,
+            content=llm_response.content,
+            format_used=response_format,
+            retrieved_chunks=chunks,
+            model_name=llm_response.model_name,
+        )
+
+    except Exception:
+        # timed() already set success=False and error_type on whichever stage failed
+        if not collector._embed.success:
+            collector.success = False
+            collector.error_type = collector._embed.error_type
+        elif not collector._retrieve.success:
+            collector.success = False
+            collector.error_type = collector._retrieve.error_type
+        elif not collector._llm.success:
+            collector.success = False
+            collector.error_type = collector._llm.error_type
+        raise
+
+    finally:
+        # Always persist — even on exception and even for cross-domain early-return.
+        # Python's finally runs before the return value is delivered to the caller.
+        await persist_metrics(session, collector)

@@ -14,7 +14,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routers import admin, auth, feedback, query, validation
+from backend.api.routers import admin, auth, feedback, metrics, query, validation
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(query.router)
     app.include_router(feedback.router)
     app.include_router(validation.router)
+    app.include_router(metrics.router)
 
     @app.get("/health", tags=["health"])
     async def health_check() -> dict:
