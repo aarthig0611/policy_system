@@ -7,12 +7,12 @@ import statistics
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.api.schemas import LatencyStats, MetricsSummary
+from backend.api.schemas import FeedbackMetrics, LatencyStats, MetricsSummary
 from backend.auth.dependencies import require_admin
-from backend.db.models import QueryMetrics, User
+from backend.db.models import Feedback, QueryMetrics, User
 from backend.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
@@ -114,4 +114,59 @@ async def get_metrics_summary(
         window_start=window_start,
         window_end=window_end,
         computed_at=window_end,
+    )
+
+
+@router.delete("", status_code=204)
+async def clear_metrics(
+    session: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_admin),
+) -> None:
+    """Delete all rows from query_metrics. Requires SYSTEM_ADMIN role."""
+    await session.execute(delete(QueryMetrics))
+    await session.commit()
+    logger.info("query_metrics table cleared by admin")
+
+
+@router.get("/feedback-summary", response_model=FeedbackMetrics)
+async def get_feedback_metrics(
+    session: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_admin),
+) -> FeedbackMetrics:
+    """
+    Return aggregate feedback-based evaluation metrics across all rated queries.
+    Requires SYSTEM_ADMIN role.
+
+    - weighted_precision: fraction of rated queries with positive feedback (rating >= 3),
+      weighted by rater authority (GLOBAL_AUDITOR=2.0, DOMAIN_AUDITOR=1.5, FUNCTIONAL=1.0).
+    """
+    result = await session.execute(select(Feedback))
+    rows: list[Feedback] = list(result.scalars().all())
+
+    total_rated = len(rows)
+    if total_rated == 0:
+        return FeedbackMetrics(
+            total_rated=0,
+            positive_count=0,
+            negative_count=0,
+            weighted_precision=0.0,
+            avg_rating=0.0,
+            weighted_avg_rating=0.0,
+        )
+
+    positive = [r for r in rows if r.rating >= 3]
+    negative = [r for r in rows if r.rating < 3]
+
+    total_weight = sum(r.weight for r in rows)
+    weighted_positive = sum(r.weight for r in positive)
+
+    return FeedbackMetrics(
+        total_rated=total_rated,
+        positive_count=len(positive),
+        negative_count=len(negative),
+        weighted_precision=round(weighted_positive / total_weight, 4) if total_weight else 0.0,
+        avg_rating=round(statistics.mean(r.rating for r in rows), 4),
+        weighted_avg_rating=round(
+            sum(r.weight * r.rating for r in rows) / total_weight, 4
+        ) if total_weight else 0.0,
     )

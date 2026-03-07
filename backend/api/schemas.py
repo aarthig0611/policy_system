@@ -277,6 +277,15 @@ class MetricsSummary(BaseModel):
     computed_at: datetime
 
 
+class FeedbackMetrics(BaseModel):
+    total_rated: int
+    positive_count: int
+    negative_count: int
+    weighted_precision: float
+    avg_rating: float
+    weighted_avg_rating: float
+
+
 # ---------------------------------------------------------------------------
 # Generic
 # ---------------------------------------------------------------------------
