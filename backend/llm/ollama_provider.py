@@ -48,6 +48,7 @@ class OllamaProvider:
         user_message: str,
         context_chunks: list[RetrievedChunk],
         stream: bool = False,
+        cite: bool = True,
     ) -> LLMResponse:
         """
         Generate a grounded response using the provided context chunks.
@@ -68,13 +69,16 @@ class OllamaProvider:
         # Build context block
         context_lines = []
         for i, chunk in enumerate(context_chunks, start=1):
-            location = f"[Doc: {chunk.doc_title}"
-            if chunk.page_number is not None:
-                location += f", Page {chunk.page_number}"
-            if chunk.para_number is not None:
-                location += f", Para {chunk.para_number}"
-            location += "]"
-            context_lines.append(f"[{i}] {location}\n{chunk.text}")
+            if cite:
+                location = f"[Doc: {chunk.doc_title}"
+                if chunk.page_number is not None:
+                    location += f", Page {chunk.page_number}"
+                if chunk.para_number is not None:
+                    location += f", Para {chunk.para_number}"
+                location += "]"
+                context_lines.append(f"[{i}] {location}\n{chunk.text}")
+            else:
+                context_lines.append(chunk.text)
 
         context_block = "\n\n---\n\n".join(context_lines)
 

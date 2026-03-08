@@ -126,6 +126,7 @@ async def run_query(
                 system_prompt=system_prompt,
                 user_message=message,
                 context_chunks=chunks,
+                cite=(response_format == ResponseFormat.DETAILED_RESPONSE),
             )
 
         # 9. Save assistant message with source doc IDs

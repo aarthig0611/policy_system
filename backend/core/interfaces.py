@@ -73,6 +73,7 @@ class LLMProvider(Protocol):
         user_message: str,
         context_chunks: list[RetrievedChunk],
         stream: bool = False,
+        cite: bool = True,
     ) -> LLMResponse:
         """
         Generate a grounded response using the provided context chunks.
