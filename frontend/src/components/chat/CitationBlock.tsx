@@ -39,7 +39,7 @@ export default function CitationBlock({ citations }: CitationBlockProps) {
             key={`${citation.doc_id}-${index}`}
             className="text-xs text-gray-500"
           >
-            [{formatCitation(citation)}]
+            {index + 1}. {formatCitation(citation)}
           </li>
         ))}
       </ul>

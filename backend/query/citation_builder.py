@@ -12,30 +12,21 @@ from backend.core.models import RetrievedChunk
 
 def build_citations(chunks: list[RetrievedChunk]) -> list[CitationResponse]:
     """
-    Build a deduplicated list of citation objects from retrieved chunks.
+    Build a numbered list of citation objects from retrieved chunks, preserving
+    retrieval order without deduplication.
 
-    Deduplication is by (doc_id, page_number, para_number) to avoid
-    showing the same location twice when multiple chunks came from the same paragraph.
+    Source numbers (1-N) correspond directly to the [N] markers in the LLM response,
+    since the context passed to the LLM numbers chunks in the same order.
     """
-    seen: set[tuple] = set()
-    citations = []
-
-    for chunk in chunks:
-        key = (chunk.doc_id, chunk.page_number, chunk.para_number)
-        if key in seen:
-            continue
-        seen.add(key)
-
-        citations.append(
-            CitationResponse(
-                doc_id=chunk.doc_id,
-                doc_title=chunk.doc_title,
-                page_number=chunk.page_number,
-                para_number=chunk.para_number,
-            )
+    return [
+        CitationResponse(
+            doc_id=chunk.doc_id,
+            doc_title=chunk.doc_title,
+            page_number=chunk.page_number,
+            para_number=chunk.para_number,
         )
-
-    return citations
+        for chunk in chunks
+    ]
 
 
 def format_citation_text(chunk: RetrievedChunk) -> str:

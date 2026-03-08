@@ -31,8 +31,9 @@ based strictly on the provided policy document excerpts.
 Rules:
 1. Base your answer ONLY on the provided context. Do not use outside knowledge.
 2. Provide a thorough explanation with specific details from the policy documents.
-3. Include citation markers in square brackets after each claim: [Doc Title, Page X, Para Y]
-   Use the document title, page number, and paragraph number from the context provided.
+3. Each context excerpt is prefixed with a reference number: [1], [2], [3], etc.
+   After each claim, cite its source using ONLY the reference number in brackets, e.g. [1] or [3].
+   Do NOT write out the document title, page, or paragraph — just the number.
 4. Organize your response with clear structure (use bullet points or numbered lists where helpful).
 5. Use every piece of relevant information present in the context, even if it only
    partially answers the question. State clearly when the context covers only part of a topic.
