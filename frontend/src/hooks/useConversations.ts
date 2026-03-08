@@ -51,7 +51,7 @@ export function useConversations() {
   const { data, isLoading, error, refetch } = useQuery<ConversationSummary[]>({
     queryKey: ["conversations"],
     queryFn: fetchConversations,
-    staleTime: 30_000, // re-fetch after 30s
+    staleTime: 0, // always refetch on mount so the list is current after navigating back
   });
 
   return {

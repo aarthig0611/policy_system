@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface Citation {
   doc_id: string;
@@ -79,6 +79,7 @@ function generateLocalId(): string {
 }
 
 export function useChat() {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [lastQueryText, setLastQueryText] = useState<string | null>(null);
@@ -121,6 +122,9 @@ export function useChat() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Refresh conversation list now that the conversation is confirmed in DB
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
 
