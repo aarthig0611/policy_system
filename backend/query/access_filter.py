@@ -44,6 +44,12 @@ async def get_allowed_role_ids(
     if not roles:
         return []
 
+    # SYSTEM_ADMIN gets unrestricted access — return every role ID so the
+    # ChromaDB $or filter matches all documents regardless of their role tags.
+    if any(r.role_type == RoleType.SYSTEM_ADMIN for r in roles):
+        all_roles_result = await session.execute(select(Role))
+        return [str(r.role_id) for r in all_roles_result.scalars().all()]
+
     # Global roles (admin, global auditor) bypass domain filtering
     global_role_types = {RoleType.GLOBAL_AUDITOR, RoleType.SYSTEM_ADMIN}
 

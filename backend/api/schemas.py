@@ -297,6 +297,7 @@ class FlaggedConversationResponse(BaseModel):
     first_message: str | None
     started_at: datetime
     message_count: int
+    feedback_comment: str | None = None
 
 
 class MessageResponse(BaseModel):

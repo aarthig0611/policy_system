@@ -379,7 +379,7 @@ async def list_flagged_conversations(
         .where(Conversation.is_flagged == True)  # noqa: E712
         .options(
             selectinload(Conversation.user),
-            selectinload(Conversation.messages),
+            selectinload(Conversation.messages).selectinload(Message.feedback),
         )
         .order_by(Conversation.started_at.desc())
     )
@@ -391,6 +391,17 @@ async def list_flagged_conversations(
             (m.content for m in conv.messages if m.role == MessageRole.user),
             None,
         )
+        # Find the most recent negative feedback comment across all messages
+        feedback_comment: str | None = None
+        for msg in sorted(conv.messages, key=lambda m: m.created_at, reverse=True):
+            negative = next(
+                (f for f in msg.feedback if f.rating < 3 and f.comments),
+                None,
+            )
+            if negative:
+                feedback_comment = negative.comments
+                break
+
         items.append(
             FlaggedConversationResponse(
                 conv_id=conv.conv_id,
@@ -398,6 +409,7 @@ async def list_flagged_conversations(
                 first_message=first_msg[:200] if first_msg else None,
                 started_at=conv.started_at,
                 message_count=len(conv.messages),
+                feedback_comment=feedback_comment,
             )
         )
     return items

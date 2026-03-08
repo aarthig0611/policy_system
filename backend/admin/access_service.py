@@ -92,8 +92,9 @@ async def get_accessible_docs(
     if not user_roles:
         return []
 
-    # Global Auditor — access to all docs
-    is_global_auditor = any(r.role_type == RoleType.GLOBAL_AUDITOR for r in user_roles)
+    # SYSTEM_ADMIN and GLOBAL_AUDITOR — access to all docs
+    full_access_types = {RoleType.GLOBAL_AUDITOR, RoleType.SYSTEM_ADMIN}
+    is_global_auditor = any(r.role_type in full_access_types for r in user_roles)
 
     query = (
         select(Document)

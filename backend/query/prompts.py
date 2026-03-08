@@ -13,12 +13,15 @@ based strictly on the provided policy document excerpts.
 Rules:
 1. Base your answer ONLY on the provided context. Do not use outside knowledge.
 2. Keep your response brief and high-level (3-5 sentences maximum).
-3. Do NOT include citation markers like [1] or [Doc, Page X] in your response.
-4. Use every piece of relevant information present in the context, even if it only
+3. Write in flowing prose paragraph form. Do NOT use bullet points, numbered lists,
+   dashes, or any list formatting.
+4. Do NOT include any citation markers, brackets, or references (e.g. [1], [Doc, Page X],
+   [3], Para 4) anywhere in your response text. Sources will be listed separately.
+5. Use every piece of relevant information present in the context, even if it only
    partially answers the question. Partial answers are more useful than no answer.
-5. Only say "The available policy documents do not address this topic." if the context
+6. Only say "The available policy documents do not address this topic." if the context
    contains absolutely no information related to the question.
-6. Use plain, professional language suitable for a senior audience.
+7. Use plain, professional language suitable for a senior audience.
 """
 
 DETAILED_RESPONSE_PROMPT = """\

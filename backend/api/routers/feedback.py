@@ -14,10 +14,10 @@ from backend.db.models import Message, User
 from backend.db.session import get_db_session
 from backend.feedback import feedback_service, flag_service
 
-router = APIRouter(prefix="/feedback", tags=["feedback"])
+router = APIRouter(prefix="/feedback", tags=["feedback"], redirect_slashes=False)
 
 
-@router.post("/", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
 async def submit_feedback(
     payload: FeedbackCreate,
     session: AsyncSession = Depends(get_db_session),

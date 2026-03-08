@@ -20,6 +20,7 @@ interface FlaggedConversation {
   first_message: string | null;
   started_at: string;
   message_count: number;
+  feedback_comment: string | null;
 }
 
 async function fetchFlagged(): Promise<FlaggedConversation[]> {
@@ -129,6 +130,7 @@ export default function FlaggedPage() {
               <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3">First message</th>
+                <th className="px-4 py-3">Feedback</th>
                 <th className="px-4 py-3 whitespace-nowrap">Messages</th>
                 <th className="px-4 py-3 whitespace-nowrap">Started</th>
                 <th className="px-4 py-3"></th>
@@ -148,6 +150,13 @@ export default function FlaggedPage() {
                       <span className="line-clamp-2">{conv.first_message}</span>
                     ) : (
                       <span className="italic text-gray-400">No messages</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 max-w-xs text-gray-600">
+                    {conv.feedback_comment ? (
+                      <span className="line-clamp-2 text-red-700">{conv.feedback_comment}</span>
+                    ) : (
+                      <span className="italic text-gray-400">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
