@@ -20,12 +20,16 @@ const SYSTEM_ADMIN_ROLE_TYPE = "SYSTEM_ADMIN";
 function NavLink({
   href,
   children,
+  exact = false,
 }: {
   href: string;
   children: React.ReactNode;
+  exact?: boolean;
 }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(href + "/");
+  const active = exact
+    ? pathname === href
+    : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Link
@@ -63,9 +67,7 @@ export default function Navbar() {
               <>
                 <NavLink href="/admin/users">Users</NavLink>
                 <NavLink href="/admin/documents">Documents</NavLink>
-                <NavLink href="/admin/flagged">Flagged</NavLink>
-                <NavLink href="/admin/validation">Validation</NavLink>
-                <NavLink href="/admin/metrics">Metrics</NavLink>
+                <NavLink href="/admin" exact>Dashboard</NavLink>
               </>
             )}
             <NavLink href="/profile">Profile</NavLink>
